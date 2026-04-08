@@ -1,0 +1,162 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+use App\Support\Campus\CampusPermission;
+use App\Support\Campus\CampusDataService;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
+class CampusDemoSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        DB::transaction(function (): void {
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            DB::table('role_has_permissions')->delete();
+            DB::table('model_has_roles')->delete();
+            DB::table('model_has_permissions')->delete();
+            DB::table('roles')->delete();
+            DB::table('permissions')->delete();
+            DB::table('company_applications')->delete();
+            DB::table('announcements')->delete();
+            DB::table('students')->delete();
+            DB::table('companies')->delete();
+            DB::table('departments')->delete();
+            DB::table('users')->delete();
+
+            DB::table('users')->insert([
+                [
+                    'id' => 1,
+                    'name' => 'Dr. Nandita Roy',
+                    'email' => 'admin@demo.com',
+                    'password' => Hash::make('demo123'),
+                    'role' => 'admin',
+                    'title' => 'Campus Administrator',
+                    'department_code' => null,
+                    'email_verified_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'Meera Nair',
+                    'email' => 'staff@demo.com',
+                    'password' => Hash::make('demo123'),
+                    'role' => 'staff',
+                    'title' => 'Department Coordinator',
+                    'department_code' => 'CSE',
+                    'email_verified_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'id' => 3,
+                    'name' => 'Rahul Sharma',
+                    'email' => 'student@demo.com',
+                    'password' => Hash::make('demo123'),
+                    'role' => 'student',
+                    'title' => 'Final Year Student',
+                    'department_code' => 'CSE',
+                    'email_verified_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ]);
+
+            app(CampusDataService::class)->sync([
+                'users' => [
+                    [
+                        'id' => 1,
+                        'name' => 'Dr. Nandita Roy',
+                        'email' => 'admin@demo.com',
+                        'role' => 'admin',
+                        'title' => 'Campus Administrator',
+                    ],
+                    [
+                        'id' => 2,
+                        'name' => 'Meera Nair',
+                        'email' => 'staff@demo.com',
+                        'role' => 'staff',
+                        'title' => 'Department Coordinator',
+                        'departmentCode' => 'CSE',
+                    ],
+                    [
+                        'id' => 3,
+                        'name' => 'Rahul Sharma',
+                        'email' => 'student@demo.com',
+                        'role' => 'student',
+                        'title' => 'Final Year Student',
+                        'departmentCode' => 'CSE',
+                    ],
+                ],
+                'departments' => [
+                    ['id' => 1, 'name' => 'Computer Science & Engineering', 'code' => 'CSE', 'hod' => 'Dr. Meera Thomas', 'staffCount' => 18, 'intake' => 240, 'accent' => '#24a8e8'],
+                    ['id' => 2, 'name' => 'Electronics & Communication', 'code' => 'ECE', 'hod' => 'Prof. Arjun Nair', 'staffCount' => 14, 'intake' => 180, 'accent' => '#58c9d6'],
+                    ['id' => 3, 'name' => 'Mechanical Engineering', 'code' => 'ME', 'hod' => 'Dr. Kavitha Rao', 'staffCount' => 12, 'intake' => 120, 'accent' => '#76c861'],
+                    ['id' => 4, 'name' => 'MBA', 'code' => 'MBA', 'hod' => 'Prof. Sandeep Iyer', 'staffCount' => 9, 'intake' => 90, 'accent' => '#96d85f'],
+                ],
+                'students' => [
+                    ['id' => 1, 'name' => 'Rahul Sharma', 'email' => 'student@demo.com', 'registrationNumber' => 'BIT23CSE001', 'departmentCode' => 'CSE', 'year' => '4th Year', 'status' => 'Placement Ready', 'cgpa' => 8.7, 'attendance' => 92, 'phone' => '+1 555-0101', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [2], 'skills' => ['React', 'Node.js', 'SQL']],
+                    ['id' => 2, 'name' => 'Anjali Iyer', 'email' => 'anjali.iyer@brightnode.edu', 'registrationNumber' => 'BIT24CSE014', 'departmentCode' => 'CSE', 'year' => '3rd Year', 'status' => 'Active', 'cgpa' => 8.4, 'attendance' => 95, 'phone' => '+1 555-0102', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Python', 'UI Design', 'Figma']],
+                    ['id' => 3, 'name' => 'Vikram Patel', 'email' => 'vikram.patel@brightnode.edu', 'registrationNumber' => 'BIT23ECE003', 'departmentCode' => 'ECE', 'year' => '4th Year', 'status' => 'Placed', 'cgpa' => 8.1, 'attendance' => 88, 'phone' => '+1 555-0103', 'mentor' => 'Prof. Arjun Nair', 'feeStatus' => 'Paid', 'placedCompany' => 'Infosys', 'appliedCompanyIds' => [2, 5], 'skills' => ['Embedded C', 'VLSI', 'MATLAB']],
+                    ['id' => 4, 'name' => 'Sneha Kapoor', 'email' => 'sneha.kapoor@brightnode.edu', 'registrationNumber' => 'BIT25MBA004', 'departmentCode' => 'MBA', 'year' => '2nd Year', 'status' => 'Active', 'cgpa' => 8.9, 'attendance' => 93, 'phone' => '+1 555-0104', 'mentor' => 'Prof. Sandeep Iyer', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [4], 'skills' => ['Business Analytics', 'Excel', 'Presentation']],
+                    ['id' => 5, 'name' => 'Arun Kumar', 'email' => 'arun.kumar@brightnode.edu', 'registrationNumber' => 'BIT23ME005', 'departmentCode' => 'ME', 'year' => '4th Year', 'status' => 'Placed', 'cgpa' => 7.6, 'attendance' => 86, 'phone' => '+1 555-0105', 'mentor' => 'Dr. Kavitha Rao', 'feeStatus' => 'Pending', 'placedCompany' => 'TCS', 'appliedCompanyIds' => [1, 5], 'skills' => ['AutoCAD', 'Manufacturing', 'Quality Control']],
+                    ['id' => 6, 'name' => 'Pooja Nair', 'email' => 'pooja.nair@brightnode.edu', 'registrationNumber' => 'BIT23CSE006', 'departmentCode' => 'CSE', 'year' => '4th Year', 'status' => 'Placed', 'cgpa' => 9.1, 'attendance' => 96, 'phone' => '+1 555-0106', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'placedCompany' => 'Zoho', 'appliedCompanyIds' => [3], 'skills' => ['Java', 'Spring Boot', 'DSA']],
+                    ['id' => 7, 'name' => 'Naveen Reddy', 'email' => 'naveen.reddy@brightnode.edu', 'registrationNumber' => 'BIT24ECE007', 'departmentCode' => 'ECE', 'year' => '3rd Year', 'status' => 'Active', 'cgpa' => 7.9, 'attendance' => 84, 'phone' => '+1 555-0107', 'mentor' => 'Prof. Arjun Nair', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Signal Processing', 'PCB Design']],
+                    ['id' => 8, 'name' => 'Ishita Bose', 'email' => 'ishita.bose@brightnode.edu', 'registrationNumber' => 'BIT26MBA008', 'departmentCode' => 'MBA', 'year' => '1st Year', 'status' => 'Active', 'cgpa' => 8.3, 'attendance' => 91, 'phone' => '+1 555-0108', 'mentor' => 'Prof. Sandeep Iyer', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Market Research', 'Canva', 'Sales Ops']],
+                    ['id' => 9, 'name' => 'Karthik Raj', 'email' => 'karthik.raj@brightnode.edu', 'registrationNumber' => 'BIT24ME009', 'departmentCode' => 'ME', 'year' => '3rd Year', 'status' => 'Placement Ready', 'cgpa' => 7.8, 'attendance' => 89, 'phone' => '+1 555-0109', 'mentor' => 'Dr. Kavitha Rao', 'feeStatus' => 'Pending', 'appliedCompanyIds' => [5], 'skills' => ['SolidWorks', 'Operations', 'Lean Systems']],
+                    ['id' => 10, 'name' => 'Meghana Das', 'email' => 'meghana.das@brightnode.edu', 'registrationNumber' => 'BIT25CSE010', 'departmentCode' => 'CSE', 'year' => '2nd Year', 'status' => 'Active', 'cgpa' => 8.8, 'attendance' => 94, 'phone' => '+1 555-0110', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['TypeScript', 'Next.js', 'Public Speaking']],
+                    ['id' => 11, 'name' => 'Rohit Jain', 'email' => 'rohit.jain@brightnode.edu', 'registrationNumber' => 'BIT23CSE011', 'departmentCode' => 'CSE', 'year' => '4th Year', 'status' => 'Placement Ready', 'cgpa' => 7.7, 'attendance' => 90, 'phone' => '+1 555-0111', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [1], 'skills' => ['Testing', 'JavaScript', 'Git']],
+                    ['id' => 12, 'name' => 'Lavanya Sen', 'email' => 'lavanya.sen@brightnode.edu', 'registrationNumber' => 'BIT25MBA012', 'departmentCode' => 'MBA', 'year' => '2nd Year', 'status' => 'Active', 'cgpa' => 8.5, 'attendance' => 88, 'phone' => '+1 555-0112', 'mentor' => 'Prof. Sandeep Iyer', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [4], 'skills' => ['CRM', 'Negotiation', 'Strategy']],
+                    ['id' => 13, 'name' => 'Harish V', 'email' => 'harish.v@brightnode.edu', 'registrationNumber' => 'BIT23ECE013', 'departmentCode' => 'ECE', 'year' => '4th Year', 'status' => 'Placed', 'cgpa' => 8.0, 'attendance' => 87, 'phone' => '+1 555-0113', 'mentor' => 'Prof. Arjun Nair', 'feeStatus' => 'Paid', 'placedCompany' => 'Wipro', 'appliedCompanyIds' => [5], 'skills' => ['Digital Electronics', 'Networking']],
+                    ['id' => 14, 'name' => 'Divya Menon', 'email' => 'divya.menon@brightnode.edu', 'registrationNumber' => 'BIT24CSE024', 'departmentCode' => 'CSE', 'year' => '3rd Year', 'status' => 'Active', 'cgpa' => 8.6, 'attendance' => 93, 'phone' => '+1 555-0114', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Cloud Basics', 'HTML', 'CSS']],
+                    ['id' => 15, 'name' => 'Pranav Kulkarni', 'email' => 'pranav.kulkarni@brightnode.edu', 'registrationNumber' => 'BIT23ME015', 'departmentCode' => 'ME', 'year' => '4th Year', 'status' => 'Active', 'cgpa' => 7.4, 'attendance' => 82, 'phone' => '+1 555-0115', 'mentor' => 'Dr. Kavitha Rao', 'feeStatus' => 'Pending', 'appliedCompanyIds' => [], 'skills' => ['Operations', 'Workshop Practice', 'Excel']],
+                    ['id' => 16, 'name' => 'Sanjana Rao', 'email' => 'sanjana.rao@brightnode.edu', 'registrationNumber' => 'BIT26MBA016', 'departmentCode' => 'MBA', 'year' => '1st Year', 'status' => 'Active', 'cgpa' => 8.1, 'attendance' => 90, 'phone' => '+1 555-0116', 'mentor' => 'Prof. Sandeep Iyer', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Branding', 'Social Media', 'Planning']],
+                    ['id' => 17, 'name' => 'Aditya Verma', 'email' => 'aditya.verma@brightnode.edu', 'registrationNumber' => 'BIT23CSE017', 'departmentCode' => 'CSE', 'year' => '4th Year', 'status' => 'Placed', 'cgpa' => 8.9, 'attendance' => 94, 'phone' => '+1 555-0117', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'placedCompany' => 'Freshworks', 'appliedCompanyIds' => [4], 'skills' => ['Data Structures', 'System Design', 'Leadership']],
+                    ['id' => 18, 'name' => 'Nithya S', 'email' => 'nithya.s@brightnode.edu', 'registrationNumber' => 'BIT25ECE018', 'departmentCode' => 'ECE', 'year' => '2nd Year', 'status' => 'Active', 'cgpa' => 8.2, 'attendance' => 89, 'phone' => '+1 555-0118', 'mentor' => 'Prof. Arjun Nair', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Sensors', 'Circuit Design', 'Documentation']],
+                    ['id' => 19, 'name' => 'Yash Malhotra', 'email' => 'yash.malhotra@brightnode.edu', 'registrationNumber' => 'BIT24ME019', 'departmentCode' => 'ME', 'year' => '3rd Year', 'status' => 'Active', 'cgpa' => 7.3, 'attendance' => 85, 'phone' => '+1 555-0119', 'mentor' => 'Dr. Kavitha Rao', 'feeStatus' => 'Pending', 'appliedCompanyIds' => [], 'skills' => ['Thermal Systems', 'Maintenance', 'Teamwork']],
+                    ['id' => 20, 'name' => 'Farah Khan', 'email' => 'farah.khan@brightnode.edu', 'registrationNumber' => 'BIT25MBA020', 'departmentCode' => 'MBA', 'year' => '2nd Year', 'status' => 'Placement Ready', 'cgpa' => 8.7, 'attendance' => 92, 'phone' => '+1 555-0120', 'mentor' => 'Prof. Sandeep Iyer', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [4], 'skills' => ['Operations', 'Consulting', 'Analytics']],
+                ],
+                'companies' => [
+                    ['id' => 1, 'name' => 'TCS', 'role' => 'Graduate Engineer Trainee', 'packageOffered' => '4.2 LPA', 'driveDate' => '2026-04-20', 'status' => 'Open', 'location' => 'Hyderabad', 'type' => 'Placement', 'applicants' => 42, 'shortlisted' => 16, 'eligibleDepartments' => ['CSE', 'ECE', 'ME']],
+                    ['id' => 2, 'name' => 'Infosys', 'role' => 'Systems Engineer', 'packageOffered' => '5.0 LPA', 'driveDate' => '2026-04-25', 'status' => 'Open', 'location' => 'Bengaluru', 'type' => 'Placement', 'applicants' => 38, 'shortlisted' => 11, 'eligibleDepartments' => ['CSE', 'ECE']],
+                    ['id' => 3, 'name' => 'Zoho', 'role' => 'Product Support Engineer', 'packageOffered' => '6.5 LPA', 'driveDate' => '2026-04-28', 'status' => 'Closing Soon', 'location' => 'Chennai', 'type' => 'Placement', 'applicants' => 24, 'shortlisted' => 8, 'eligibleDepartments' => ['CSE']],
+                    ['id' => 4, 'name' => 'Freshworks', 'role' => 'Business Operations Associate', 'packageOffered' => '5.8 LPA', 'driveDate' => '2026-05-02', 'status' => 'Upcoming', 'location' => 'Remote', 'type' => 'Placement', 'applicants' => 19, 'shortlisted' => 0, 'eligibleDepartments' => ['CSE', 'MBA']],
+                    ['id' => 5, 'name' => 'Wipro', 'role' => 'Associate Analyst Intern', 'packageOffered' => '25k/month', 'driveDate' => '2026-05-05', 'status' => 'Open', 'location' => 'Coimbatore', 'type' => 'Internship', 'applicants' => 31, 'shortlisted' => 9, 'eligibleDepartments' => ['CSE', 'ECE', 'ME', 'MBA']],
+                ],
+                'announcements' => [
+                    ['id' => 1, 'title' => 'Placement drive registration closes tomorrow', 'summary' => 'Students from CSE, ECE, and Mechanical must complete profile verification before 5 PM.', 'audience' => 'Students', 'priority' => 'High', 'postedBy' => 'Placement Cell', 'date' => '2026-04-04', 'category' => 'Placement'],
+                    ['id' => 2, 'title' => 'Mid-semester exam schedule published', 'summary' => 'Department coordinators can now share room allotments and invigilator assignments.', 'audience' => 'All', 'priority' => 'Medium', 'postedBy' => 'Academic Office', 'date' => '2026-04-03', 'category' => 'Academic'],
+                    ['id' => 3, 'title' => 'Faculty mentors meeting at 3:30 PM', 'summary' => 'Staff members must review attendance risk cases and submit intervention notes.', 'audience' => 'Staff', 'priority' => 'Medium', 'postedBy' => 'Dean Student Affairs', 'date' => '2026-04-02', 'category' => 'Operations'],
+                    ['id' => 4, 'title' => 'Quarterly management review ready', 'summary' => 'Admin can download the placement dashboard summary and fee recovery report from Reports.', 'audience' => 'Admin', 'priority' => 'Low', 'postedBy' => 'Operations Desk', 'date' => '2026-04-01', 'category' => 'Governance'],
+                    ['id' => 5, 'title' => 'Alumni mentoring week starts Monday', 'summary' => 'Students can book 1:1 mentoring slots for resume reviews, mock interviews, and career guidance.', 'audience' => 'Students', 'priority' => 'High', 'postedBy' => 'Career Services', 'date' => '2026-03-31', 'category' => 'Student Success'],
+                ],
+            ]);
+
+            foreach (CampusPermission::all() as $permission) {
+                Permission::findOrCreate($permission, 'sanctum');
+            }
+
+            foreach (CampusPermission::byRole() as $role => $permissions) {
+                $roleModel = Role::findOrCreate($role, 'sanctum');
+                $roleModel->syncPermissions($permissions);
+            }
+
+            User::query()->orderBy('id')->get()->each(function (User $user): void {
+                $user->syncRoles([$user->role]);
+            });
+
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+        });
+    }
+}
