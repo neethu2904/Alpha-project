@@ -1,4 +1,14 @@
+<<<<<<< HEAD
 import { campusRolePermissions, type CampusData } from './campusTypes';
+=======
+import {
+  campusDefaultDesignations,
+  campusDefaultMasters,
+  campusRolePermissions,
+  normalizeStaffPermissions,
+  type CampusData,
+} from './campusTypes';
+>>>>>>> d7dc03e (demo)
 
 export const campusBrand = {
   productName: 'Chromolog CampusOS',
@@ -530,7 +540,13 @@ const users = [
     role: 'staff',
     title: 'Department Coordinator',
     departmentCode: 'CSE',
+<<<<<<< HEAD
     permissions: [...campusRolePermissions.staff],
+=======
+    designationId: campusDefaultDesignations[0]?.id,
+    designationName: campusDefaultDesignations[0]?.name,
+    permissions: normalizeStaffPermissions(campusDefaultDesignations[0]?.permissions ?? []),
+>>>>>>> d7dc03e (demo)
   },
   {
     id: 3,
@@ -549,8 +565,19 @@ export function createCampusDemoData(): CampusData {
   return {
     users: users.map((user) => ({ ...user, permissions: user.permissions ? [...user.permissions] : undefined })),
     departments: departments.map((department) => ({ ...department })),
+<<<<<<< HEAD
     students: students.map((student) => ({
       ...student,
+=======
+    designations: campusDefaultDesignations.map((designation) => ({
+      ...designation,
+      permissions: [...designation.permissions],
+    })),
+    masters: campusDefaultMasters.map((master) => ({ ...master })),
+    students: students.map((student) => ({
+      ...student,
+      gender: student.id % 2 === 0 ? 'female' : 'male',
+>>>>>>> d7dc03e (demo)
       appliedCompanyIds: [...student.appliedCompanyIds],
       skills: [...student.skills],
     })),

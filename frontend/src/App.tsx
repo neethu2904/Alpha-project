@@ -3,6 +3,7 @@ import {
   applyToCompanyWithCampusApi,
   createAnnouncementWithCampusApi,
   createCompanyWithCampusApi,
+<<<<<<< HEAD
   createDepartmentWithCampusApi,
   createStudentWithCampusApi,
   fetchCampusBootstrap,
@@ -10,11 +11,56 @@ import {
   loginWithCampusApi,
   logoutFromCampusApi,
   resetCampusDemo,
+=======
+  createDesignationWithCampusApi,
+  createDepartmentWithCampusApi,
+  createMasterWithCampusApi,
+  createStaffWithCampusApi,
+  createStudentWithCampusApi,
+  deleteAnnouncementWithCampusApi,
+  deleteCompanyWithCampusApi,
+  deleteDesignationWithCampusApi,
+  deleteDepartmentWithCampusApi,
+  deleteMasterWithCampusApi,
+  deleteStaffWithCampusApi,
+  deleteStudentWithCampusApi,
+  fetchCampusBootstrap,
+  isCampusApiConfigured,
+  loginWithCampusApi,
+  registerWithCampusApi,
+  logoutFromCampusApi,
+  resetCampusDemo,
+  updateCampusProfile,
+  updateAnnouncementWithCampusApi,
+  updateCompanyWithCampusApi,
+  updateDesignationWithCampusApi,
+  updateDepartmentWithCampusApi,
+  updateMasterWithCampusApi,
+  updateStaffWithCampusApi,
+  updateStudentWithCampusApi,
+>>>>>>> d7dc03e (demo)
 } from './api/campusApi';
 import { createCampusDemoData, departmentAccentByCode, getDepartmentAccent } from './campusDemoData';
 import CampusLogin from './components/CampusLogin';
 import CampusWorkspace from './components/CampusWorkspace';
+<<<<<<< HEAD
 import { campusRolePermissions, type CampusData, type CampusSession } from './campusTypes';
+=======
+import {
+  campusDefaultDesignations,
+  campusDefaultMasters,
+  campusMasterCategoryLabels,
+  campusRolePermissions,
+  campusStaffAssignablePermissions,
+  getCampusMasterLabel,
+  normalizeCampusMasterValue,
+  normalizeStaffPermissions,
+  type CampusData,
+  type CampusMasterCategory,
+  type CampusPermission,
+  type CampusSession,
+} from './campusTypes';
+>>>>>>> d7dc03e (demo)
 
 const AUTH_KEY = 'chromolog-campus-auth';
 const DATA_KEY = 'chromolog-campus-data';
@@ -24,9 +70,83 @@ type StoredAuth = {
   user: CampusSession;
 };
 
+<<<<<<< HEAD
 function applyBrandAccents(dataset: CampusData): CampusData {
   return {
     ...dataset,
+=======
+function slugifyDesignation(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function slugifyMasterCode(label: string) {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function extractAssignablePermissions(permissions: CampusPermission[]) {
+  return normalizeStaffPermissions(permissions).filter((permission) => campusStaffAssignablePermissions.includes(permission));
+}
+
+function applyBrandAccents(dataset: CampusData): CampusData {
+  const hasPersistedMasters = Array.isArray((dataset as Partial<CampusData>).masters);
+  const masters = (hasPersistedMasters ? dataset.masters : campusDefaultMasters)
+    .map((master) => ({
+      ...master,
+      description: master.description ?? '',
+    }))
+    .sort((left, right) => left.category.localeCompare(right.category) || left.sortOrder - right.sortOrder || left.label.localeCompare(right.label));
+  const hasPersistedDesignations = Array.isArray((dataset as Partial<CampusData>).designations);
+  const baseDesignations = (hasPersistedDesignations ? dataset.designations : campusDefaultDesignations).map((designation) => ({
+    ...designation,
+    description: designation.description ?? '',
+    permissions: normalizeStaffPermissions(designation.permissions),
+  }));
+  const designationById = new Map(baseDesignations.map((designation) => [designation.id, designation]));
+  const designationByName = new Map(baseDesignations.map((designation) => [designation.name.trim().toLowerCase(), designation]));
+  const normalizedUsers = dataset.users.map((account) => {
+    if (account.role !== 'staff') {
+      return {
+        ...account,
+        permissions: account.permissions ?? campusRolePermissions[account.role],
+      };
+    }
+
+    const designation =
+      (account.designationId ? designationById.get(account.designationId) : undefined) ??
+      designationByName.get((account.designationName ?? account.title).trim().toLowerCase());
+
+    return {
+      ...account,
+      title: designation?.name ?? account.title,
+      designationId: designation?.id ?? account.designationId,
+      designationName: designation?.name ?? account.designationName ?? account.title,
+      permissions: normalizeStaffPermissions(account.permissions ?? designation?.permissions ?? []),
+    };
+  });
+  const designations = baseDesignations.map((designation) => ({
+    ...designation,
+    staffCount: normalizedUsers.filter(
+      (account) =>
+        account.role === 'staff' &&
+        (account.designationId === designation.id ||
+          (account.designationName ?? account.title).trim().toLowerCase() === designation.name.trim().toLowerCase()),
+    ).length,
+  }));
+
+  return {
+    ...dataset,
+    masters,
+    users: normalizedUsers,
+    designations,
+>>>>>>> d7dc03e (demo)
     departments: dataset.departments.map((department) => ({
       ...department,
       accent:
@@ -34,19 +154,47 @@ function applyBrandAccents(dataset: CampusData): CampusData {
           ? getDepartmentAccent(department.code)
           : department.accent || getDepartmentAccent(),
     })),
+<<<<<<< HEAD
+=======
+    students: dataset.students.map((student) => ({
+      ...student,
+      year: normalizeCampusMasterValue('student_year', student.year, masters) || 'year_1',
+      gender: normalizeCampusMasterValue('student_gender', student.gender ?? 'prefer_not_to_say', masters) || 'prefer_not_to_say',
+      status: normalizeCampusMasterValue('student_status', student.status, masters) || 'active',
+      feeStatus: normalizeCampusMasterValue('payment_status', student.feeStatus, masters) || 'pending',
+    })),
+    companies: dataset.companies.map((company) => ({
+      ...company,
+      status: normalizeCampusMasterValue('company_drive_status', company.status, masters) || 'upcoming',
+      type: normalizeCampusMasterValue('company_drive_type', company.type, masters) || 'placement',
+    })),
+    announcements: dataset.announcements.map((announcement) => ({
+      ...announcement,
+      audience: normalizeCampusMasterValue('announcement_audience', announcement.audience, masters) || 'all',
+      priority: normalizeCampusMasterValue('announcement_priority', announcement.priority, masters) || 'medium',
+    })),
+>>>>>>> d7dc03e (demo)
   };
 }
 
 function loadDemoData() {
   const stored = localStorage.getItem(DATA_KEY);
   if (!stored) {
+<<<<<<< HEAD
     return createCampusDemoData();
+=======
+    return applyBrandAccents(createCampusDemoData());
+>>>>>>> d7dc03e (demo)
   }
 
   try {
     return applyBrandAccents(JSON.parse(stored) as CampusData);
   } catch {
+<<<<<<< HEAD
     return createCampusDemoData();
+=======
+    return applyBrandAccents(createCampusDemoData());
+>>>>>>> d7dc03e (demo)
   }
 }
 
@@ -134,6 +282,77 @@ export default function App() {
     setError('');
   };
 
+<<<<<<< HEAD
+=======
+  const handleRegister = async ({ name, email, password }: { name: string; email: string; password: string }) => {
+    if (apiConfigured) {
+      try {
+        const response = await registerWithCampusApi(name, email, password);
+        setData(applyBrandAccents(response.data));
+        setAuth({ token: response.token, user: response.user });
+        setError('');
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Laravel API registration failed.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingAccount = data.users.find((candidate) => candidate.email.toLowerCase() === email.toLowerCase());
+
+    if (existingAccount) {
+      const duplicateError = new Error('An account with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const nextUserId = Math.max(0, ...data.users.map((user) => user.id)) + 1;
+    const nextStudentId = Math.max(0, ...data.students.map((student) => student.id)) + 1;
+    const departmentCode = data.departments[0]?.code ?? 'CSE';
+    const mentor = data.departments.find((department) => department.code === departmentCode)?.hod ?? 'Campus Advisor';
+
+    const newUser = {
+      id: nextUserId,
+      name,
+      email,
+      password,
+      role: 'student' as const,
+      title: 'Student Applicant',
+      departmentCode,
+      studentId: nextStudentId,
+      permissions: [...campusRolePermissions.student],
+    };
+
+    const newStudent = {
+      id: nextStudentId,
+      name,
+      email,
+      registrationNumber: `BIT26${departmentCode}${String(nextStudentId).padStart(3, '0')}`,
+      departmentCode,
+      year: 'year_1',
+      gender: 'prefer_not_to_say',
+      status: 'active',
+      cgpa: 0,
+      attendance: 0,
+      phone: '',
+      mentor,
+      feeStatus: 'pending',
+      appliedCompanyIds: [] as number[],
+      skills: [] as string[],
+    };
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        users: [...current.users, newUser],
+        students: [newStudent, ...current.students],
+      }),
+    );
+    setAuth({ user: toSessionUser(newUser) });
+    setError('');
+  };
+
+>>>>>>> d7dc03e (demo)
   const requireToken = () => {
     if (!auth?.token) {
       throw new Error('Your session has expired. Please sign in again.');
@@ -162,7 +381,11 @@ export default function App() {
       return;
     }
 
+<<<<<<< HEAD
     const freshData = createCampusDemoData();
+=======
+    const freshData = applyBrandAccents(createCampusDemoData());
+>>>>>>> d7dc03e (demo)
     setData(freshData);
 
     if (auth?.user) {
@@ -176,10 +399,20 @@ export default function App() {
     email: string;
     departmentCode?: string;
     year: string;
+<<<<<<< HEAD
     cgpa: number;
     attendance: number;
     phone?: string;
     feeStatus: 'Paid' | 'Pending';
+=======
+    gender: string;
+    status: string;
+    cgpa: number;
+    attendance: number;
+    phone?: string;
+    feeStatus: string;
+    password?: string;
+>>>>>>> d7dc03e (demo)
     skills: string[];
   }) => {
     if (apiConfigured) {
@@ -197,13 +430,26 @@ export default function App() {
       return;
     }
 
+<<<<<<< HEAD
     const nextId = Math.max(0, ...data.students.map((student) => student.id)) + 1;
+=======
+    const duplicateAccount = data.users.find((candidate) => candidate.email.toLowerCase() === payload.email.toLowerCase());
+    if (duplicateAccount) {
+      const duplicateError = new Error('An account with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const nextId = Math.max(0, ...data.students.map((student) => student.id)) + 1;
+    const nextUserId = Math.max(0, ...data.users.map((account) => account.id)) + 1;
+>>>>>>> d7dc03e (demo)
     const departmentCode = user.role === 'staff' ? user.departmentCode ?? payload.departmentCode ?? 'CSE' : payload.departmentCode ?? 'CSE';
     const mentor =
       user.role === 'staff'
         ? user.name
         : data.departments.find((department) => department.code === departmentCode)?.hod ?? user.name;
 
+<<<<<<< HEAD
     setData((current) => ({
       ...current,
       students: [
@@ -225,6 +471,172 @@ export default function App() {
         },
         ...current.students,
       ],
+=======
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        users: [
+          ...current.users,
+          {
+            id: nextUserId,
+            name: payload.name,
+            email: payload.email,
+            password: payload.password,
+            role: 'student',
+            title: 'Student Applicant',
+            departmentCode,
+            studentId: nextId,
+            permissions: [...campusRolePermissions.student],
+          },
+        ],
+        students: [
+          {
+            id: nextId,
+            name: payload.name,
+            email: payload.email,
+            registrationNumber: `BIT26${departmentCode}${String(nextId).padStart(3, '0')}`,
+            departmentCode,
+            year: payload.year,
+            gender: payload.gender,
+            status: payload.status,
+            cgpa: payload.cgpa,
+            attendance: payload.attendance,
+            phone: payload.phone || '+1 555-0199',
+            mentor,
+            feeStatus: payload.feeStatus,
+            appliedCompanyIds: [],
+            skills: payload.skills,
+          },
+          ...current.students,
+        ],
+      }),
+    );
+    setError('');
+  };
+
+  const handleUpdateStudent = async (
+    studentId: number,
+    payload: {
+      name: string;
+      email: string;
+      departmentCode?: string;
+      year: string;
+      gender: string;
+      status: string;
+      cgpa: number;
+      attendance: number;
+      phone?: string;
+      feeStatus: string;
+      password?: string;
+      skills: string[];
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => updateStudentWithCampusApi(token, studentId, payload));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the student.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingStudent = data.students.find((student) => student.id === studentId);
+    if (!existingStudent) {
+      const missingError = new Error('Student record not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const duplicateAccount = data.users.find(
+      (candidate) => candidate.email.toLowerCase() === payload.email.toLowerCase() && candidate.studentId !== studentId,
+    );
+    if (duplicateAccount) {
+      const duplicateError = new Error('An account with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const duplicateStudent = data.students.find(
+      (candidate) => candidate.email.toLowerCase() === payload.email.toLowerCase() && candidate.id !== studentId,
+    );
+    if (duplicateStudent) {
+      const duplicateError = new Error('A student with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const departmentCode = payload.departmentCode ?? existingStudent.departmentCode;
+    const mentor = data.departments.find((department) => department.code === departmentCode)?.hod ?? existingStudent.mentor;
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        students: current.students.map((student) =>
+          student.id === studentId
+            ? {
+                ...student,
+                name: payload.name,
+                email: payload.email,
+                departmentCode,
+                year: payload.year,
+                gender: payload.gender,
+                status: payload.status,
+                cgpa: payload.cgpa,
+                attendance: payload.attendance,
+                phone: payload.phone || '',
+                mentor,
+                feeStatus: payload.feeStatus,
+                skills: payload.skills,
+              }
+            : student,
+        ),
+        users: current.users.map((account) =>
+          account.studentId === studentId || account.email.toLowerCase() === existingStudent.email.toLowerCase()
+            ? {
+                ...account,
+                name: payload.name,
+                email: payload.email,
+                departmentCode,
+                ...(payload.password ? { password: payload.password } : {}),
+              }
+            : account,
+        ),
+      }),
+    );
+    setError('');
+  };
+
+  const handleDeleteStudent = async (studentId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteStudentWithCampusApi(token, studentId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the student.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingStudent = data.students.find((student) => student.id === studentId);
+    if (!existingStudent) {
+      const missingError = new Error('Student record not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    setData((current) => ({
+      ...current,
+      students: current.students.filter((student) => student.id !== studentId),
+      users: current.users.filter(
+        (account) => account.studentId !== studentId && account.email.toLowerCase() !== existingStudent.email.toLowerCase(),
+      ),
+      companies: current.companies.map((company) =>
+        existingStudent.appliedCompanyIds.includes(company.id)
+          ? { ...company, applicants: Math.max(company.applicants - 1, 0) }
+          : company,
+      ),
+>>>>>>> d7dc03e (demo)
     }));
     setError('');
   };
@@ -266,14 +678,142 @@ export default function App() {
     setError('');
   };
 
+<<<<<<< HEAD
+=======
+  const handleUpdateDepartment = async (
+    departmentId: number,
+    payload: {
+      name: string;
+      code: string;
+      hod: string;
+      staffCount: number;
+      intake: number;
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => updateDepartmentWithCampusApi(token, departmentId, payload));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the department.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingDepartment = data.departments.find((department) => department.id === departmentId);
+    if (!existingDepartment) {
+      const missingError = new Error('Department record not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const nextCode = payload.code.trim().toUpperCase();
+    const duplicateDepartment = data.departments.find(
+      (department) => department.code === nextCode && department.id !== departmentId,
+    );
+    if (duplicateDepartment) {
+      const duplicateError = new Error('A department with this code already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    setData((current) => ({
+      ...current,
+      departments: current.departments.map((department) =>
+        department.id === departmentId
+          ? {
+              ...department,
+              name: payload.name,
+              code: nextCode,
+              hod: payload.hod,
+              staffCount: payload.staffCount,
+              intake: payload.intake,
+              accent: getDepartmentAccent(nextCode),
+            }
+          : department,
+      ),
+      students: current.students.map((student) =>
+        student.departmentCode === existingDepartment.code
+          ? {
+              ...student,
+              departmentCode: nextCode,
+              mentor: payload.hod,
+            }
+          : student,
+      ),
+      users: current.users.map((account) =>
+        account.departmentCode === existingDepartment.code
+          ? {
+              ...account,
+              departmentCode: nextCode,
+            }
+          : account,
+      ),
+      companies: current.companies.map((company) =>
+        company.eligibleDepartments.includes(existingDepartment.code)
+          ? {
+              ...company,
+              eligibleDepartments: company.eligibleDepartments.map((code) =>
+                code === existingDepartment.code ? nextCode : code,
+              ),
+            }
+          : company,
+      ),
+    }));
+    setError('');
+  };
+
+  const handleDeleteDepartment = async (departmentId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteDepartmentWithCampusApi(token, departmentId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the department.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingDepartment = data.departments.find((department) => department.id === departmentId);
+    if (!existingDepartment) {
+      const missingError = new Error('Department record not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const inUse =
+      data.students.some((student) => student.departmentCode === existingDepartment.code) ||
+      data.users.some((account) => account.departmentCode === existingDepartment.code) ||
+      data.companies.some((company) => company.eligibleDepartments.includes(existingDepartment.code));
+
+    if (inUse) {
+      const inUseError = new Error('This department is still in use. Reassign linked students or drives before deleting it.');
+      setError(inUseError.message);
+      throw inUseError;
+    }
+
+    setData((current) => ({
+      ...current,
+      departments: current.departments.filter((department) => department.id !== departmentId),
+    }));
+    setError('');
+  };
+
+>>>>>>> d7dc03e (demo)
   const handleCreateCompany = async (payload: {
     name: string;
     role: string;
     packageOffered: string;
     driveDate: string;
+<<<<<<< HEAD
     status: 'Open' | 'Closing Soon' | 'Upcoming' | 'Closed';
     location: string;
     type: 'Placement' | 'Internship';
+=======
+    status: string;
+    location: string;
+    type: string;
+>>>>>>> d7dc03e (demo)
     eligibleDepartments: string[];
   }) => {
     if (apiConfigured) {
@@ -288,6 +828,7 @@ export default function App() {
 
     const nextId = Math.max(0, ...data.companies.map((company) => company.id)) + 1;
 
+<<<<<<< HEAD
     setData((current) => ({
       ...current,
       companies: [
@@ -306,6 +847,96 @@ export default function App() {
         },
         ...current.companies,
       ],
+=======
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        companies: [
+          {
+            id: nextId,
+            name: payload.name,
+            role: payload.role,
+            packageOffered: payload.packageOffered,
+            driveDate: payload.driveDate,
+            status: payload.status,
+            location: payload.location,
+            type: payload.type,
+            applicants: 0,
+            shortlisted: 0,
+            eligibleDepartments: payload.eligibleDepartments,
+          },
+          ...current.companies,
+        ],
+      }),
+    );
+    setError('');
+  };
+
+  const handleUpdateCompany = async (
+    companyId: number,
+    payload: {
+      name: string;
+      role: string;
+      packageOffered: string;
+      driveDate: string;
+      status: string;
+      location: string;
+      type: string;
+      eligibleDepartments: string[];
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => updateCompanyWithCampusApi(token, companyId, payload));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the company drive.');
+        throw apiError;
+      }
+      return;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        companies: current.companies.map((company) =>
+          company.id === companyId
+            ? {
+                ...company,
+                name: payload.name,
+                role: payload.role,
+                packageOffered: payload.packageOffered,
+                driveDate: payload.driveDate,
+                status: payload.status,
+                location: payload.location,
+                type: payload.type,
+                eligibleDepartments: payload.eligibleDepartments,
+              }
+            : company,
+        ),
+      }),
+    );
+    setError('');
+  };
+
+  const handleDeleteCompany = async (companyId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteCompanyWithCampusApi(token, companyId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the company drive.');
+        throw apiError;
+      }
+      return;
+    }
+
+    setData((current) => ({
+      ...current,
+      companies: current.companies.filter((company) => company.id !== companyId),
+      students: current.students.map((student) => ({
+        ...student,
+        appliedCompanyIds: student.appliedCompanyIds.filter((id) => id !== companyId),
+      })),
+>>>>>>> d7dc03e (demo)
     }));
     setError('');
   };
@@ -313,8 +944,13 @@ export default function App() {
   const handleCreateAnnouncement = async (payload: {
     title: string;
     summary: string;
+<<<<<<< HEAD
     audience: 'All' | 'Students' | 'Staff' | 'Admin';
     priority: 'High' | 'Medium' | 'Low';
+=======
+    audience: string;
+    priority: string;
+>>>>>>> d7dc03e (demo)
     category: string;
   }) => {
     if (apiConfigured) {
@@ -329,6 +965,7 @@ export default function App() {
 
     const nextId = Math.max(0, ...data.announcements.map((announcement) => announcement.id)) + 1;
 
+<<<<<<< HEAD
     setData((current) => ({
       ...current,
       announcements: [
@@ -344,10 +981,609 @@ export default function App() {
         },
         ...current.announcements,
       ],
+=======
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        announcements: [
+          {
+            id: nextId,
+            title: payload.title,
+            summary: payload.summary,
+            audience: payload.audience,
+            priority: payload.priority,
+            postedBy: auth?.user.name ?? 'Campus Team',
+            date: '2026-04-05',
+            category: payload.category,
+          },
+          ...current.announcements,
+        ],
+      }),
+    );
+    setError('');
+  };
+
+  const handleUpdateAnnouncement = async (
+    announcementId: number,
+    payload: {
+      title: string;
+      summary: string;
+      audience: string;
+      priority: string;
+      category: string;
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => updateAnnouncementWithCampusApi(token, announcementId, payload));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the announcement.');
+        throw apiError;
+      }
+      return;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        announcements: current.announcements.map((announcement) =>
+          announcement.id === announcementId
+            ? {
+                ...announcement,
+                title: payload.title,
+                summary: payload.summary,
+                audience: payload.audience,
+                priority: payload.priority,
+                category: payload.category,
+              }
+            : announcement,
+        ),
+      }),
+    );
+    setError('');
+  };
+
+  const handleDeleteAnnouncement = async (announcementId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteAnnouncementWithCampusApi(token, announcementId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the announcement.');
+        throw apiError;
+      }
+      return;
+    }
+
+    setData((current) => ({
+      ...current,
+      announcements: current.announcements.filter((announcement) => announcement.id !== announcementId),
+>>>>>>> d7dc03e (demo)
     }));
     setError('');
   };
 
+<<<<<<< HEAD
+=======
+  const handleUpdateProfile = async (payload: { name: string; email: string; title: string; password?: string }) => {
+    if (!auth?.user) {
+      return;
+    }
+
+    if (apiConfigured) {
+      try {
+        const response = await updateCampusProfile(requireToken(), payload);
+        setData(applyBrandAccents(response.data));
+        setAuth((current) => (current ? { ...current, user: response.user } : current));
+        setError('');
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update your profile.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const duplicateAccount = data.users.find(
+      (candidate) => candidate.email.toLowerCase() === payload.email.toLowerCase() && candidate.id !== auth.user.id,
+    );
+    if (duplicateAccount) {
+      const duplicateError = new Error('An account with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    setData((current) => ({
+      ...current,
+      users: current.users.map((account) =>
+        account.id === auth.user.id
+          ? {
+              ...account,
+              name: payload.name,
+              email: payload.email,
+              title: payload.title,
+              ...(payload.password ? { password: payload.password } : {}),
+            }
+          : account,
+      ),
+      students: current.students.map((student) =>
+        student.id === auth.user.studentId
+          ? {
+              ...student,
+              name: payload.name,
+              email: payload.email,
+            }
+          : student,
+      ),
+    }));
+    setAuth((current) =>
+      current
+        ? {
+            ...current,
+            user: {
+              ...current.user,
+              name: payload.name,
+              email: payload.email,
+              title: payload.title,
+            },
+          }
+        : current,
+    );
+    setError('');
+  };
+
+  const handleCreateStaff = async (payload: {
+    name: string;
+    email: string;
+    designationId: number;
+    departmentCode: string;
+    password?: string;
+    permissions: CampusPermission[];
+  }) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) =>
+          createStaffWithCampusApi(token, {
+            ...payload,
+            permissions: extractAssignablePermissions(payload.permissions),
+          }),
+        );
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to create the staff account.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const duplicateAccount = data.users.find((candidate) => candidate.email.toLowerCase() === payload.email.toLowerCase());
+    if (duplicateAccount) {
+      const duplicateError = new Error('An account with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const designation = data.designations.find((candidate) => candidate.id === payload.designationId);
+    if (!designation) {
+      const designationError = new Error('Choose a valid designation before saving the staff account.');
+      setError(designationError.message);
+      throw designationError;
+    }
+
+    const nextUserId = Math.max(0, ...data.users.map((account) => account.id)) + 1;
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        users: [
+          ...current.users,
+          {
+            id: nextUserId,
+            name: payload.name,
+            email: payload.email,
+            password: payload.password,
+            role: 'staff',
+            title: designation.name,
+            departmentCode: payload.departmentCode,
+            designationId: designation.id,
+            designationName: designation.name,
+            permissions: normalizeStaffPermissions(payload.permissions),
+          },
+        ],
+      }),
+    );
+    setError('');
+  };
+
+  const handleUpdateStaff = async (
+    staffId: number,
+    payload: {
+      name: string;
+      email: string;
+      designationId: number;
+      departmentCode: string;
+      password?: string;
+      permissions: CampusPermission[];
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) =>
+          updateStaffWithCampusApi(token, staffId, {
+            ...payload,
+            permissions: extractAssignablePermissions(payload.permissions),
+          }),
+        );
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the staff account.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const duplicateAccount = data.users.find(
+      (candidate) => candidate.email.toLowerCase() === payload.email.toLowerCase() && candidate.id !== staffId,
+    );
+    if (duplicateAccount) {
+      const duplicateError = new Error('An account with this email already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const designation = data.designations.find((candidate) => candidate.id === payload.designationId);
+    if (!designation) {
+      const designationError = new Error('Choose a valid designation before saving the staff account.');
+      setError(designationError.message);
+      throw designationError;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        users: current.users.map((account) =>
+          account.id === staffId
+            ? {
+                ...account,
+                name: payload.name,
+                email: payload.email,
+                title: designation.name,
+                departmentCode: payload.departmentCode,
+                designationId: designation.id,
+                designationName: designation.name,
+                permissions: normalizeStaffPermissions(payload.permissions),
+                ...(payload.password ? { password: payload.password } : {}),
+              }
+            : account,
+        ),
+      }),
+    );
+    setError('');
+  };
+
+  const handleDeleteStaff = async (staffId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteStaffWithCampusApi(token, staffId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the staff account.');
+        throw apiError;
+      }
+      return;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        users: current.users.filter((account) => account.id !== staffId),
+      }),
+    );
+    setError('');
+  };
+
+  const handleCreateDesignation = async (payload: {
+    name: string;
+    description?: string;
+    permissions: CampusPermission[];
+  }) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) =>
+          createDesignationWithCampusApi(token, {
+            ...payload,
+            permissions: extractAssignablePermissions(payload.permissions),
+          }),
+        );
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to create the designation.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const name = payload.name.trim();
+    const slug = slugifyDesignation(name);
+    const duplicateDesignation = data.designations.find(
+      (candidate) =>
+        candidate.name.trim().toLowerCase() === name.toLowerCase() || candidate.slug.trim().toLowerCase() === slug,
+    );
+    if (duplicateDesignation) {
+      const duplicateError = new Error('A designation with this name already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const nextDesignationId = Math.max(0, ...data.designations.map((designation) => designation.id)) + 1;
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        designations: [
+          {
+            id: nextDesignationId,
+            name,
+            slug,
+            description: payload.description?.trim() ?? '',
+            permissions: normalizeStaffPermissions(payload.permissions),
+            staffCount: 0,
+          },
+          ...current.designations,
+        ],
+      }),
+    );
+    setError('');
+  };
+
+  const handleUpdateDesignation = async (
+    designationId: number,
+    payload: {
+      name: string;
+      description?: string;
+      permissions: CampusPermission[];
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) =>
+          updateDesignationWithCampusApi(token, designationId, {
+            ...payload,
+            permissions: extractAssignablePermissions(payload.permissions),
+          }),
+        );
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the designation.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingDesignation = data.designations.find((designation) => designation.id === designationId);
+    if (!existingDesignation) {
+      const missingError = new Error('Designation record not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const name = payload.name.trim();
+    const slug = slugifyDesignation(name);
+    const duplicateDesignation = data.designations.find(
+      (candidate) =>
+        candidate.id !== designationId &&
+        (candidate.name.trim().toLowerCase() === name.toLowerCase() || candidate.slug.trim().toLowerCase() === slug),
+    );
+    if (duplicateDesignation) {
+      const duplicateError = new Error('A designation with this name already exists.');
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const nextPermissions = normalizeStaffPermissions(payload.permissions);
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        designations: current.designations.map((designation) =>
+          designation.id === designationId
+            ? {
+                ...designation,
+                name,
+                slug,
+                description: payload.description?.trim() ?? '',
+                permissions: nextPermissions,
+              }
+            : designation,
+        ),
+        users: current.users.map((account) =>
+          account.role === 'staff' && account.designationId === designationId
+            ? {
+                ...account,
+                title: name,
+                designationName: name,
+                permissions: nextPermissions,
+              }
+            : account,
+        ),
+      }),
+    );
+    setError('');
+  };
+
+  const handleDeleteDesignation = async (designationId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteDesignationWithCampusApi(token, designationId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the designation.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingDesignation = data.designations.find((designation) => designation.id === designationId);
+    if (!existingDesignation) {
+      const missingError = new Error('Designation record not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const linkedStaff = data.users.some((account) => account.role === 'staff' && account.designationId === designationId);
+    if (linkedStaff) {
+      const inUseError = new Error('This designation is still assigned to staff accounts. Reassign those staff members before deleting it.');
+      setError(inUseError.message);
+      throw inUseError;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        designations: current.designations.filter((designation) => designation.id !== designationId),
+      }),
+    );
+    setError('');
+  };
+
+  const handleCreateMaster = async (payload: {
+    category: CampusMasterCategory;
+    label: string;
+    description?: string;
+    sortOrder: number;
+  }) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => createMasterWithCampusApi(token, payload));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to create the master option.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const code = slugifyMasterCode(payload.label);
+    const duplicateMaster = data.masters.find(
+      (master) => master.category === payload.category && (master.code === code || master.label.trim().toLowerCase() === payload.label.trim().toLowerCase()),
+    );
+    if (duplicateMaster) {
+      const duplicateError = new Error(`A value with this label already exists in ${campusMasterCategoryLabels[payload.category]}.`);
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    const nextMasterId = Math.max(0, ...data.masters.map((master) => master.id)) + 1;
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        masters: [
+          ...current.masters,
+          {
+            id: nextMasterId,
+            category: payload.category,
+            code,
+            label: payload.label.trim(),
+            description: payload.description?.trim() ?? '',
+            sortOrder: payload.sortOrder,
+          },
+        ],
+      }),
+    );
+    setError('');
+  };
+
+  const handleUpdateMaster = async (
+    masterId: number,
+    payload: {
+      category: CampusMasterCategory;
+      label: string;
+      description?: string;
+      sortOrder: number;
+    },
+  ) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => updateMasterWithCampusApi(token, masterId, payload));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to update the master option.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingMaster = data.masters.find((master) => master.id === masterId);
+    if (!existingMaster) {
+      const missingError = new Error('Master option not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const duplicateMaster = data.masters.find(
+      (master) =>
+        master.id !== masterId &&
+        master.category === existingMaster.category &&
+        master.label.trim().toLowerCase() === payload.label.trim().toLowerCase(),
+    );
+    if (duplicateMaster) {
+      const duplicateError = new Error(`A value with this label already exists in ${campusMasterCategoryLabels[existingMaster.category]}.`);
+      setError(duplicateError.message);
+      throw duplicateError;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        masters: current.masters.map((master) =>
+          master.id === masterId
+            ? {
+                ...master,
+                label: payload.label.trim(),
+                description: payload.description?.trim() ?? '',
+                sortOrder: payload.sortOrder,
+              }
+            : master,
+        ),
+      }),
+    );
+    setError('');
+  };
+
+  const handleDeleteMaster = async (masterId: number) => {
+    if (apiConfigured) {
+      try {
+        await replaceDataFromApi((token) => deleteMasterWithCampusApi(token, masterId));
+      } catch (apiError) {
+        setError(apiError instanceof Error ? apiError.message : 'Unable to delete the master option.');
+        throw apiError;
+      }
+      return;
+    }
+
+    const existingMaster = data.masters.find((master) => master.id === masterId);
+    if (!existingMaster) {
+      const missingError = new Error('Master option not found.');
+      setError(missingError.message);
+      throw missingError;
+    }
+
+    const masterInUse =
+      (existingMaster.category === 'student_gender' && data.students.some((student) => student.gender === existingMaster.code)) ||
+      (existingMaster.category === 'student_year' && data.students.some((student) => student.year === existingMaster.code)) ||
+      (existingMaster.category === 'student_status' && data.students.some((student) => student.status === existingMaster.code)) ||
+      (existingMaster.category === 'payment_status' && data.students.some((student) => student.feeStatus === existingMaster.code)) ||
+      (existingMaster.category === 'company_drive_status' && data.companies.some((company) => company.status === existingMaster.code)) ||
+      (existingMaster.category === 'company_drive_type' && data.companies.some((company) => company.type === existingMaster.code)) ||
+      (existingMaster.category === 'announcement_audience' && data.announcements.some((announcement) => announcement.audience === existingMaster.code)) ||
+      (existingMaster.category === 'announcement_priority' && data.announcements.some((announcement) => announcement.priority === existingMaster.code));
+
+    if (masterInUse) {
+      const inUseError = new Error('This master option is still used by campus records. Update those records before deleting it.');
+      setError(inUseError.message);
+      throw inUseError;
+    }
+
+    setData((current) =>
+      applyBrandAccents({
+        ...current,
+        masters: current.masters.filter((master) => master.id !== masterId),
+      }),
+    );
+    setError('');
+  };
+
+>>>>>>> d7dc03e (demo)
   const handleApplyToCompany = async (companyId: number) => {
     if (apiConfigured) {
       try {
@@ -395,7 +1631,11 @@ export default function App() {
   };
 
   if (!auth?.user) {
+<<<<<<< HEAD
     return <CampusLogin error={error} onLogin={handleLogin} />;
+=======
+    return <CampusLogin error={error} onLogin={handleLogin} onRegister={handleRegister} />;
+>>>>>>> d7dc03e (demo)
   }
 
   return (
@@ -406,9 +1646,33 @@ export default function App() {
       onLogout={handleLogout}
       onResetDemo={handleResetDemo}
       onCreateStudent={handleCreateStudent}
+<<<<<<< HEAD
       onCreateDepartment={handleCreateDepartment}
       onCreateCompany={handleCreateCompany}
       onCreateAnnouncement={handleCreateAnnouncement}
+=======
+      onUpdateStudent={handleUpdateStudent}
+      onDeleteStudent={handleDeleteStudent}
+      onCreateDepartment={handleCreateDepartment}
+      onUpdateDepartment={handleUpdateDepartment}
+      onDeleteDepartment={handleDeleteDepartment}
+      onCreateCompany={handleCreateCompany}
+      onUpdateCompany={handleUpdateCompany}
+      onDeleteCompany={handleDeleteCompany}
+      onCreateAnnouncement={handleCreateAnnouncement}
+      onUpdateAnnouncement={handleUpdateAnnouncement}
+      onDeleteAnnouncement={handleDeleteAnnouncement}
+      onUpdateProfile={handleUpdateProfile}
+      onCreateMaster={handleCreateMaster}
+      onUpdateMaster={handleUpdateMaster}
+      onDeleteMaster={handleDeleteMaster}
+      onCreateDesignation={handleCreateDesignation}
+      onUpdateDesignation={handleUpdateDesignation}
+      onDeleteDesignation={handleDeleteDesignation}
+      onCreateStaff={handleCreateStaff}
+      onUpdateStaff={handleUpdateStaff}
+      onDeleteStaff={handleDeleteStaff}
+>>>>>>> d7dc03e (demo)
       onApplyToCompany={handleApplyToCompany}
     />
   );

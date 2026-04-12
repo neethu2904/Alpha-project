@@ -4,6 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+<<<<<<< HEAD
+=======
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+>>>>>>> d7dc03e (demo)
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -30,6 +34,10 @@ class User extends Authenticatable
         'role',
         'title',
         'department_code',
+<<<<<<< HEAD
+=======
+        'designation_id',
+>>>>>>> d7dc03e (demo)
     ];
 
     /**
@@ -59,4 +67,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(Student::class);
     }
+<<<<<<< HEAD
+=======
+
+    public function designation(): BelongsTo
+    {
+        return $this->belongsTo(Designation::class);
+    }
+>>>>>>> d7dc03e (demo)
 }

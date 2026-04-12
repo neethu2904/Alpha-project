@@ -43,6 +43,7 @@ final class CampusPermission
             'admin' => self::all(),
             'staff' => [
                 self::DASHBOARD_VIEW,
+<<<<<<< HEAD
                 self::STUDENTS_VIEW,
                 self::STUDENTS_CREATE,
                 self::PLACEMENT_VIEW,
@@ -50,6 +51,8 @@ final class CampusPermission
                 self::ANNOUNCEMENTS_VIEW,
                 self::ANNOUNCEMENTS_CREATE,
                 self::REPORTS_VIEW,
+=======
+>>>>>>> d7dc03e (demo)
                 self::PROFILE_VIEW,
             ],
             'student' => [

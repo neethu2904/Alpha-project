@@ -15,6 +15,10 @@ class Student extends Model
         'registration_number',
         'department_code',
         'year',
+<<<<<<< HEAD
+=======
+        'gender',
+>>>>>>> d7dc03e (demo)
         'status',
         'cgpa',
         'attendance',

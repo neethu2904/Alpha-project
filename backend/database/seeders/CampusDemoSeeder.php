@@ -5,6 +5,11 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Support\Campus\CampusPermission;
 use App\Support\Campus\CampusDataService;
+<<<<<<< HEAD
+=======
+use App\Support\Campus\CampusMasterCatalog;
+use App\Support\Campus\CampusStaffAccess;
+>>>>>>> d7dc03e (demo)
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +26,25 @@ class CampusDemoSeeder extends Seeder
     {
         DB::transaction(function (): void {
             app(PermissionRegistrar::class)->forgetCachedPermissions();
+<<<<<<< HEAD
+=======
+            $designationSeeds = collect(CampusStaffAccess::designationSeeds())
+                ->values()
+                ->map(fn (array $designation, int $index) => [
+                    'id' => $index + 1,
+                    ...$designation,
+                ])
+                ->all();
+            $masterSeeds = collect(CampusMasterCatalog::defaultOptions())
+                ->values()
+                ->map(fn (array $master, int $index) => [
+                    'id' => $index + 1,
+                    ...$master,
+                ])
+                ->all();
+            $defaultDesignationId = collect($designationSeeds)
+                ->firstWhere('slug', 'department_coordinator')['id'] ?? 1;
+>>>>>>> d7dc03e (demo)
 
             DB::table('role_has_permissions')->delete();
             DB::table('model_has_roles')->delete();
@@ -33,6 +57,20 @@ class CampusDemoSeeder extends Seeder
             DB::table('companies')->delete();
             DB::table('departments')->delete();
             DB::table('users')->delete();
+<<<<<<< HEAD
+=======
+            DB::table('designations')->delete();
+
+            DB::table('designations')->insert(array_map(static fn (array $designation) => [
+                'id' => $designation['id'],
+                'name' => $designation['name'],
+                'slug' => $designation['slug'],
+                'description' => $designation['description'],
+                'permissions' => json_encode($designation['permissions']),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ], $designationSeeds));
+>>>>>>> d7dc03e (demo)
 
             DB::table('users')->insert([
                 [
@@ -43,6 +81,10 @@ class CampusDemoSeeder extends Seeder
                     'role' => 'admin',
                     'title' => 'Campus Administrator',
                     'department_code' => null,
+<<<<<<< HEAD
+=======
+                    'designation_id' => null,
+>>>>>>> d7dc03e (demo)
                     'email_verified_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -55,6 +97,10 @@ class CampusDemoSeeder extends Seeder
                     'role' => 'staff',
                     'title' => 'Department Coordinator',
                     'department_code' => 'CSE',
+<<<<<<< HEAD
+=======
+                    'designation_id' => $defaultDesignationId,
+>>>>>>> d7dc03e (demo)
                     'email_verified_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -67,6 +113,10 @@ class CampusDemoSeeder extends Seeder
                     'role' => 'student',
                     'title' => 'Final Year Student',
                     'department_code' => 'CSE',
+<<<<<<< HEAD
+=======
+                    'designation_id' => null,
+>>>>>>> d7dc03e (demo)
                     'email_verified_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -88,6 +138,10 @@ class CampusDemoSeeder extends Seeder
                         'email' => 'staff@demo.com',
                         'role' => 'staff',
                         'title' => 'Department Coordinator',
+<<<<<<< HEAD
+=======
+                        'designationId' => $defaultDesignationId,
+>>>>>>> d7dc03e (demo)
                         'departmentCode' => 'CSE',
                     ],
                     [
@@ -99,6 +153,24 @@ class CampusDemoSeeder extends Seeder
                         'departmentCode' => 'CSE',
                     ],
                 ],
+<<<<<<< HEAD
+=======
+                'designations' => array_map(static fn (array $designation) => [
+                    'id' => $designation['id'],
+                    'name' => $designation['name'],
+                    'slug' => $designation['slug'],
+                    'description' => $designation['description'],
+                    'permissions' => $designation['permissions'],
+                ], $designationSeeds),
+                'masters' => array_map(static fn (array $master) => [
+                    'id' => $master['id'],
+                    'category' => $master['category'],
+                    'code' => $master['code'],
+                    'label' => $master['label'],
+                    'description' => $master['description'],
+                    'sortOrder' => $master['sort_order'],
+                ], $masterSeeds),
+>>>>>>> d7dc03e (demo)
                 'departments' => [
                     ['id' => 1, 'name' => 'Computer Science & Engineering', 'code' => 'CSE', 'hod' => 'Dr. Meera Thomas', 'staffCount' => 18, 'intake' => 240, 'accent' => '#24a8e8'],
                     ['id' => 2, 'name' => 'Electronics & Communication', 'code' => 'ECE', 'hod' => 'Prof. Arjun Nair', 'staffCount' => 14, 'intake' => 180, 'accent' => '#58c9d6'],
@@ -152,8 +224,17 @@ class CampusDemoSeeder extends Seeder
                 $roleModel->syncPermissions($permissions);
             }
 
+<<<<<<< HEAD
             User::query()->orderBy('id')->get()->each(function (User $user): void {
                 $user->syncRoles([$user->role]);
+=======
+            User::query()->with('designation')->orderBy('id')->get()->each(function (User $user): void {
+                $user->syncRoles([$user->role]);
+
+                if ($user->role === 'staff') {
+                    $user->syncPermissions(CampusStaffAccess::normalize($user->designation?->permissions ?? CampusStaffAccess::defaultPermissions()));
+                }
+>>>>>>> d7dc03e (demo)
             });
 
             app(PermissionRegistrar::class)->forgetCachedPermissions();
