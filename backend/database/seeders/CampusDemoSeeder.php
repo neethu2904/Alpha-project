@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Support\Campus\CampusPermission;
 use App\Support\Campus\CampusDataService;
+use App\Support\Campus\CampusMasterCatalog;
+use App\Support\Campus\CampusStaffAccess;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +23,9 @@ class CampusDemoSeeder extends Seeder
     {
         DB::transaction(function (): void {
             app(PermissionRegistrar::class)->forgetCachedPermissions();
+            // All demo data is handled by this seeder using Spatie permissions system
+
+            $defaultDesignationId = null; // For staff users if needed
 
             DB::table('role_has_permissions')->delete();
             DB::table('model_has_roles')->delete();
@@ -33,6 +38,7 @@ class CampusDemoSeeder extends Seeder
             DB::table('companies')->delete();
             DB::table('departments')->delete();
             DB::table('users')->delete();
+            DB::table('designations')->delete();
 
             DB::table('users')->insert([
                 [
@@ -43,6 +49,7 @@ class CampusDemoSeeder extends Seeder
                     'role' => 'admin',
                     'title' => 'Campus Administrator',
                     'department_code' => null,
+                    'designation_id' => null,
                     'email_verified_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -55,6 +62,7 @@ class CampusDemoSeeder extends Seeder
                     'role' => 'staff',
                     'title' => 'Department Coordinator',
                     'department_code' => 'CSE',
+                    'designation_id' => $defaultDesignationId,
                     'email_verified_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -67,6 +75,7 @@ class CampusDemoSeeder extends Seeder
                     'role' => 'student',
                     'title' => 'Final Year Student',
                     'department_code' => 'CSE',
+                    'designation_id' => null,
                     'email_verified_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -88,6 +97,7 @@ class CampusDemoSeeder extends Seeder
                         'email' => 'staff@demo.com',
                         'role' => 'staff',
                         'title' => 'Department Coordinator',
+                        'designationId' => $defaultDesignationId,
                         'departmentCode' => 'CSE',
                     ],
                     [
@@ -99,12 +109,9 @@ class CampusDemoSeeder extends Seeder
                         'departmentCode' => 'CSE',
                     ],
                 ],
-                'departments' => [
-                    ['id' => 1, 'name' => 'Computer Science & Engineering', 'code' => 'CSE', 'hod' => 'Dr. Meera Thomas', 'staffCount' => 18, 'intake' => 240, 'accent' => '#24a8e8'],
-                    ['id' => 2, 'name' => 'Electronics & Communication', 'code' => 'ECE', 'hod' => 'Prof. Arjun Nair', 'staffCount' => 14, 'intake' => 180, 'accent' => '#58c9d6'],
-                    ['id' => 3, 'name' => 'Mechanical Engineering', 'code' => 'ME', 'hod' => 'Dr. Kavitha Rao', 'staffCount' => 12, 'intake' => 120, 'accent' => '#76c861'],
-                    ['id' => 4, 'name' => 'MBA', 'code' => 'MBA', 'hod' => 'Prof. Sandeep Iyer', 'staffCount' => 9, 'intake' => 90, 'accent' => '#96d85f'],
-                ],
+                'designations' => [],  // Handled via DesignationObserver when users are synced
+                'masters' => [],  // Keep for backward compatibility
+                'departments' => [],  // Can be added here if needed
                 'students' => [
                     ['id' => 1, 'name' => 'Rahul Sharma', 'email' => 'student@demo.com', 'registrationNumber' => 'BIT23CSE001', 'departmentCode' => 'CSE', 'year' => '4th Year', 'status' => 'Placement Ready', 'cgpa' => 8.7, 'attendance' => 92, 'phone' => '+1 555-0101', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [2], 'skills' => ['React', 'Node.js', 'SQL']],
                     ['id' => 2, 'name' => 'Anjali Iyer', 'email' => 'anjali.iyer@brightnode.edu', 'registrationNumber' => 'BIT24CSE014', 'departmentCode' => 'CSE', 'year' => '3rd Year', 'status' => 'Active', 'cgpa' => 8.4, 'attendance' => 95, 'phone' => '+1 555-0102', 'mentor' => 'Dr. Meera Thomas', 'feeStatus' => 'Paid', 'appliedCompanyIds' => [], 'skills' => ['Python', 'UI Design', 'Figma']],
@@ -152,8 +159,23 @@ class CampusDemoSeeder extends Seeder
                 $roleModel->syncPermissions($permissions);
             }
 
-            User::query()->orderBy('id')->get()->each(function (User $user): void {
+            // Sync user permissions based on role and designation
+            // This will be automatically handled by UserObserver on user updates going forward
+            User::query()->with('designation')->orderBy('id')->get()->each(function (User $user): void {
                 $user->syncRoles([$user->role]);
+                
+                // Determine permissions based on role
+                $permissions = CampusPermission::byRole()[$user->role] ?? [];
+
+                // Add designation-specific permissions for staff
+                if ($user->role === 'staff' && $user->designation && !empty($user->designation->permissions)) {
+                    $designationPerms = CampusStaffAccess::normalize($user->designation->permissions);
+                    $permissions = array_merge($permissions, $designationPerms);
+                }
+
+                if (!empty($permissions)) {
+                    $user->syncPermissions(array_unique($permissions));
+                }
             });
 
             app(PermissionRegistrar::class)->forgetCachedPermissions();

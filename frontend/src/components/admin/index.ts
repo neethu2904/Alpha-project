@@ -1,0 +1,13 @@
+export { default as AdminDashboard } from './AdminDashboard';
+export { default as AcademicYearModule } from './AcademicYearModule';
+export { default as ClassesModule } from './ClassesModule';
+export { default as CoursesModule } from './CoursesModule';
+export { default as ExamsModule } from './ExamsModule';
+export { default as FeesModule } from './FeesModule';
+export { default as MarksModule } from './MarksModule';
+export { default as RolesPermissionsModule } from './RolesPermissionsModule';
+export { default as SubjectsModule } from './SubjectsModule';
+export { default as SystemSettingsModule } from './SystemSettingsModule';
+export { default as TimetableModule } from './TimetableModule';
+export { DepartmentsModule } from './DepartmentsModule';
+export { DesignationsModule } from './DesignationsModule';

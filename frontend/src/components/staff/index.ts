@@ -1,0 +1,13 @@
+export { default as StaffDashboard } from './StaffDashboard';
+export { default as AttendanceMarking } from './AttendanceMarking';
+export { default as AttendanceMarkForm } from './AttendanceMarkForm';
+export { default as AttendanceModule } from './AttendanceModule';
+export { default as AttendanceReport } from './AttendanceReport';
+export { default as DepartmentOverview } from './DepartmentOverview';
+export { default as ExamCoordinatorModule } from './ExamCoordinatorModule';
+export { default as HODReportsAnalytics } from './HODReportsAnalytics';
+export { default as HODStaffManagement } from './HODStaffManagement';
+export { default as MarksEntry } from './MarksEntry';
+export { default as PlacementOfficerModule } from './PlacementOfficerModule';
+export { default as RecruiterDashboard } from './RecruiterDashboard';
+export { default as TPODashboard } from './TPODashboard';

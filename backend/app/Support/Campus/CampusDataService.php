@@ -6,18 +6,24 @@ use App\Models\Announcement;
 use App\Models\Company;
 use App\Models\CompanyApplication;
 use App\Models\Department;
+use App\Models\Designation;
+use App\Models\MasterOption;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CampusDataService
 {
     public function build(): array
     {
         return $this->buildDataset(
-            User::query()->with('student:id,user_id')->orderBy('id')->get(),
+            User::query()->with(['student:id,user_id', 'designation:id,name'])->orderBy('id')->get(),
             Department::query()->orderBy('id')->get(),
+            Designation::query()->orderBy('name')->get(),
+            $this->loadMasterOptions(),
             Student::query()->with('applications')->orderBy('id')->get(),
             Company::query()->orderBy('id')->get(),
             Announcement::query()->orderByDesc('date')->orderByDesc('id')->get(),
@@ -29,7 +35,7 @@ class CampusDataService
         $user->loadMissing('student:id,user_id,department_code');
 
         $users = User::query()
-            ->with('student:id,user_id')
+            ->with(['student:id,user_id', 'designation:id,name'])
             ->when($user->role !== 'admin', fn ($query) => $query->whereKey($user->id))
             ->orderBy('id')
             ->get();
@@ -71,11 +77,42 @@ class CampusDataService
 
         return $this->buildDataset(
             $users,
-            Department::query()->orderBy('id')->get(),
+            Department::query()
+                ->orderBy('id')
+                ->get(),
+            Designation::query()
+                ->when(
+                    $user->role !== 'admin',
+                    fn ($query) => $query->whereRaw('1 = 0')
+                )
+                ->orderBy('name')
+                ->get(),
+            $this->loadMasterOptions(),
             $students,
             $companies,
             $announcements,
         );
+    }
+
+    private function loadMasterOptions(): Collection
+    {
+        if (! DB::connection()->getSchemaBuilder()->hasTable('master_options')) {
+            return collect(CampusMasterCatalog::defaultOptions())
+                ->map(fn (array $option) => new MasterOption([
+                    'id' => $option['id'],
+                    'category' => $option['category'],
+                    'code' => $option['code'],
+                    'label' => $option['label'],
+                    'description' => $option['description'] ?? '',
+                    'sort_order' => $option['sortOrder'],
+                ]));
+        }
+
+        return MasterOption::query()
+            ->orderBy('category')
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get();
     }
 
     public function authenticatedUser(User $user): array
@@ -84,7 +121,6 @@ class CampusDataService
 
         return [
             ...$this->sessionUser($user),
-            'permissions' => $this->permissionsFor($user),
         ];
     }
 
@@ -99,11 +135,43 @@ class CampusDataService
 
     public function permissionsFor(User $user): array
     {
-        return $user->getAllPermissions()
-            ->pluck('name')
-            ->sort()
-            ->values()
-            ->all();
+        if ($user->role === 'admin') {
+            return CampusPermission::all();
+        }
+
+        if ($user->role === 'staff') {
+            $user->loadMissing('designation:id,name,permissions');
+            $rolePermissions = CampusPermission::byRole()['staff'] ?? [];
+            $designationPermissions = $user->designation?->resolvedPermissions() ?? [];
+
+            return CampusStaffAccess::normalize(array_merge($rolePermissions, $designationPermissions));
+        }
+
+        if ($user->role === 'student') {
+            return CampusStudentAccess::defaultPermissions();
+        }
+
+        $permissions = $user->getAllPermissions();
+        
+        // Handle both array and Collection from RBAC system
+        if (is_object($permissions) && method_exists($permissions, 'pluck')) {
+            return $permissions
+                ->pluck('name')
+                ->sort()
+                ->values()
+                ->all();
+        }
+        
+        // Fallback for array
+        if (is_array($permissions)) {
+            return collect($permissions)
+                ->pluck('name')
+                ->sort()
+                ->values()
+                ->all();
+        }
+        
+        return [];
     }
 
     public function summaryForUser(User $user): array
@@ -114,13 +182,13 @@ class CampusDataService
         $announcements = collect($data['announcements']);
 
         $studentCount = $students->count();
-        $placed = $students->where('status', 'Placed')->count();
+        $placed = $students->where('status', 'placed')->count();
 
         return [
             'students' => $studentCount,
             'placed' => $placed,
-            'placementReady' => $students->where('status', 'Placement Ready')->count(),
-            'openDrives' => $companies->whereIn('status', ['Open', 'Closing Soon'])->count(),
+            'placementReady' => $students->where('status', 'placement_ready')->count(),
+            'openDrives' => $companies->whereIn('status', ['open', 'closing_soon'])->count(),
             'departments' => count($data['departments']),
             'announcements' => $announcements->count(),
             'placementRate' => $studentCount > 0 ? round(($placed / $studentCount) * 100) : 0,
@@ -129,6 +197,8 @@ class CampusDataService
 
     public function sessionUser(User $user): array
     {
+        $user->loadMissing('designation:id,name');
+
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -136,8 +206,41 @@ class CampusDataService
             'role' => $user->role,
             'title' => $user->title,
             'departmentCode' => $user->department_code,
+            'designationId' => $user->designation_id,
+            'designationName' => $user->designation?->name,
+            'phone' => $user->phone,
+            'imageUrl' => $this->resolveImageUrl($user->image_url),
+            'communicationAddress' => $user->communication_address,
+            'permanentAddress' => $user->permanent_address,
+            'emergencyContactPerson' => $user->emergency_contact_person,
+            'emergencyContactNumber' => $user->emergency_contact_number,
+            'biometricId' => $user->biometric_id,
+            'experienceYears' => $user->experience_years,
+            'specialization' => $user->specialization,
             'studentId' => $user->student?->id,
+            'permissions' => $this->permissionsFor($user),
         ];
+    }
+
+    private function resolveImageUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        $publicPath = Str::startsWith($path, '/storage/')
+            ? $path
+            : Storage::disk('public')->url($path);
+
+        if (Str::startsWith($publicPath, ['http://', 'https://'])) {
+            return $publicPath;
+        }
+
+        return url($publicPath);
     }
 
     public function sync(array $payload): void
@@ -148,6 +251,34 @@ class CampusDataService
             Student::query()->delete();
             Company::query()->delete();
             Department::query()->delete();
+            User::query()->whereNotNull('designation_id')->update(['designation_id' => null]);
+            Designation::query()->delete();
+            MasterOption::query()->delete();
+
+            foreach ($payload['masters'] ?? [] as $master) {
+                DB::table('master_options')->insert([
+                    'id' => $master['id'],
+                    'category' => $master['category'],
+                    'code' => $master['code'],
+                    'label' => $master['label'],
+                    'description' => $master['description'] ?? null,
+                    'sort_order' => $master['sortOrder'] ?? 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            foreach ($payload['designations'] ?? [] as $designation) {
+                DB::table('designations')->insert([
+                    'id' => $designation['id'],
+                    'name' => $designation['name'],
+                    'slug' => $designation['slug'],
+                    'description' => $designation['description'] ?? null,
+                    'permissions' => json_encode($designation['permissions'] ?? []),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             foreach ($payload['departments'] ?? [] as $department) {
                 DB::table('departments')->insert([
@@ -170,9 +301,9 @@ class CampusDataService
                     'role' => $company['role'],
                     'package_offered' => $company['packageOffered'],
                     'drive_date' => $company['driveDate'],
-                    'status' => $company['status'],
+                    'status' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::COMPANY_DRIVE_STATUS, $company['status']) ?? 'upcoming',
                     'location' => $company['location'],
-                    'type' => $company['type'],
+                    'type' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::COMPANY_DRIVE_TYPE, $company['type']) ?? 'placement',
                     'applicants' => $company['applicants'] ?? 0,
                     'shortlisted' => $company['shortlisted'] ?? 0,
                     'eligible_departments' => json_encode($company['eligibleDepartments'] ?? []),
@@ -189,15 +320,17 @@ class CampusDataService
                     'email' => $student['email'],
                     'registration_number' => $student['registrationNumber'],
                     'department_code' => $student['departmentCode'],
-                    'year' => $student['year'],
-                    'status' => $student['status'],
+                    'year' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::STUDENT_YEAR, $student['year']) ?? 'year_1',
+                    'gender' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::STUDENT_GENDER, $student['gender'] ?? 'prefer_not_to_say') ?? 'prefer_not_to_say',
+                    'status' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::STUDENT_STATUS, $student['status']) ?? 'active',
                     'cgpa' => $student['cgpa'],
                     'attendance' => $student['attendance'],
                     'phone' => $student['phone'] ?? '',
                     'mentor' => $student['mentor'] ?? '',
-                    'fee_status' => $student['feeStatus'],
+                    'fee_status' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::PAYMENT_STATUS, $student['feeStatus']) ?? 'pending',
                     'placed_company' => $student['placedCompany'] ?? null,
                     'skills' => json_encode($student['skills'] ?? []),
+                    'resume_profile' => isset($student['resume']) ? json_encode($student['resume']) : null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -208,8 +341,8 @@ class CampusDataService
                     'id' => $announcement['id'],
                     'title' => $announcement['title'],
                     'summary' => $announcement['summary'],
-                    'audience' => $announcement['audience'],
-                    'priority' => $announcement['priority'],
+                    'audience' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::ANNOUNCEMENT_AUDIENCE, $announcement['audience']) ?? 'all',
+                    'priority' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::ANNOUNCEMENT_PRIORITY, $announcement['priority']) ?? 'medium',
                     'posted_by' => $announcement['postedBy'],
                     'date' => $announcement['date'],
                     'category' => $announcement['category'],
@@ -237,6 +370,7 @@ class CampusDataService
                     'role' => $user['role'] ?? User::query()->where('email', $user['email'])->value('role'),
                     'title' => $user['title'] ?? User::query()->where('email', $user['email'])->value('title'),
                     'department_code' => $user['departmentCode'] ?? User::query()->where('email', $user['email'])->value('department_code'),
+                    'designation_id' => $user['designationId'] ?? User::query()->where('email', $user['email'])->value('designation_id'),
                 ]);
             }
         });
@@ -245,6 +379,8 @@ class CampusDataService
     private function buildDataset(
         iterable $users,
         iterable $departments,
+        iterable $designations,
+        iterable $masters,
         iterable $students,
         iterable $companies,
         iterable $announcements,
@@ -266,6 +402,28 @@ class CampusDataService
                 ])
                 ->values()
                 ->all(),
+            'designations' => collect($designations)
+                ->map(fn (Designation $designation) => [
+                    'id' => $designation->id,
+                    'name' => $designation->name,
+                    'slug' => $designation->slug,
+                    'description' => $designation->description ?? '',
+                    'permissions' => CampusStaffAccess::normalize($designation->permissions ?? []),
+                    'staffCount' => $designation->users()->count(),
+                ])
+                ->values()
+                ->all(),
+            'masters' => collect($masters)
+                ->map(fn (MasterOption $master) => [
+                    'id' => $master->id,
+                    'category' => $master->category,
+                    'code' => $master->code,
+                    'label' => $master->label,
+                    'description' => $master->description ?? '',
+                    'sortOrder' => $master->sort_order,
+                ])
+                ->values()
+                ->all(),
             'students' => collect($students)
                 ->map(fn (Student $student) => [
                     'id' => $student->id,
@@ -273,16 +431,18 @@ class CampusDataService
                     'email' => $student->email,
                     'registrationNumber' => $student->registration_number,
                     'departmentCode' => $student->department_code,
-                    'year' => $student->year,
-                    'status' => $student->status,
+                    'year' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::STUDENT_YEAR, $student->year) ?? 'year_1',
+                    'gender' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::STUDENT_GENDER, $student->gender) ?? 'prefer_not_to_say',
+                    'status' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::STUDENT_STATUS, $student->status) ?? 'active',
                     'cgpa' => (float) $student->cgpa,
                     'attendance' => (int) $student->attendance,
                     'phone' => $student->phone ?? '',
                     'mentor' => $student->mentor ?? '',
-                    'feeStatus' => $student->fee_status,
+                    'feeStatus' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::PAYMENT_STATUS, $student->fee_status) ?? 'pending',
                     'placedCompany' => $student->placed_company,
                     'appliedCompanyIds' => $student->applications->pluck('company_id')->values()->all(),
                     'skills' => $student->skills ?? [],
+                    'resume' => $student->resume_profile,
                 ])
                 ->values()
                 ->all(),
@@ -293,9 +453,9 @@ class CampusDataService
                     'role' => $company->role,
                     'packageOffered' => $company->package_offered,
                     'driveDate' => optional($company->drive_date)->toDateString(),
-                    'status' => $company->status,
+                    'status' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::COMPANY_DRIVE_STATUS, $company->status) ?? 'upcoming',
                     'location' => $company->location,
-                    'type' => $company->type,
+                    'type' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::COMPANY_DRIVE_TYPE, $company->type) ?? 'placement',
                     'applicants' => (int) $company->applicants,
                     'shortlisted' => (int) $company->shortlisted,
                     'eligibleDepartments' => $company->eligible_departments ?? [],
@@ -307,8 +467,8 @@ class CampusDataService
                     'id' => $announcement->id,
                     'title' => $announcement->title,
                     'summary' => $announcement->summary,
-                    'audience' => $announcement->audience,
-                    'priority' => $announcement->priority,
+                    'audience' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::ANNOUNCEMENT_AUDIENCE, $announcement->audience) ?? 'all',
+                    'priority' => CampusMasterCatalog::normalizeValue(CampusMasterCatalog::ANNOUNCEMENT_PRIORITY, $announcement->priority) ?? 'medium',
                     'postedBy' => $announcement->posted_by,
                     'date' => optional($announcement->date)->toDateString(),
                     'category' => $announcement->category,
@@ -321,9 +481,9 @@ class CampusDataService
     private function visibleAudiencesFor(User $user): array
     {
         return match ($user->role) {
-            'staff' => ['All', 'Staff'],
-            'student' => ['All', 'Students'],
-            default => ['All', 'Students', 'Staff', 'Admin'],
+            'staff' => ['all', 'staff'],
+            'student' => ['all', 'students'],
+            default => ['all', 'students', 'staff', 'admin'],
         };
     }
 }

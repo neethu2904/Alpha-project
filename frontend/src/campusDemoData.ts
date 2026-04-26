@@ -1,4 +1,10 @@
-import { campusRolePermissions, type CampusData } from './campusTypes';
+import {
+  campusDefaultDesignations,
+  campusDefaultMasters,
+  campusRolePermissions,
+  normalizeStaffPermissions,
+  type CampusData,
+} from './campusTypes';
 
 export const campusBrand = {
   productName: 'Chromolog CampusOS',
@@ -524,16 +530,66 @@ const users = [
   },
   {
     id: 2,
-    name: 'Meera Nair',
-    email: 'staff@demo.com',
+    name: 'Dr. Meera Thomas',
+    email: 'hod.cse@demo.com',
+    password: 'demo123',
+    role: 'staff',
+    title: 'Head of Department',
+    departmentCode: 'CSE',
+    designationId: campusDefaultDesignations[0]?.id, // HOD designation
+    designationName: campusDefaultDesignations[0]?.name,
+    permissions: normalizeStaffPermissions(campusDefaultDesignations[0]?.permissions ?? []),
+  },
+  {
+    id: 3,
+    name: 'Prof. Arjun Nair',
+    email: 'hod.ece@demo.com',
+    password: 'demo123',
+    role: 'staff',
+    title: 'Head of Department',
+    departmentCode: 'ECE',
+    designationId: campusDefaultDesignations[0]?.id, // HOD designation
+    designationName: campusDefaultDesignations[0]?.name,
+    permissions: normalizeStaffPermissions(campusDefaultDesignations[0]?.permissions ?? []),
+  },
+  {
+    id: 4,
+    name: 'Dr. Kavitha Rao',
+    email: 'hod.me@demo.com',
+    password: 'demo123',
+    role: 'staff',
+    title: 'Head of Department',
+    departmentCode: 'ME',
+    designationId: campusDefaultDesignations[0]?.id, // HOD designation
+    designationName: campusDefaultDesignations[0]?.name,
+    permissions: normalizeStaffPermissions(campusDefaultDesignations[0]?.permissions ?? []),
+  },
+  {
+    id: 5,
+    name: 'Prof. Sandeep Iyer',
+    email: 'hod.mba@demo.com',
+    password: 'demo123',
+    role: 'staff',
+    title: 'Head of Department',
+    departmentCode: 'MBA',
+    designationId: campusDefaultDesignations[0]?.id, // HOD designation
+    designationName: campusDefaultDesignations[0]?.name,
+    permissions: normalizeStaffPermissions(campusDefaultDesignations[0]?.permissions ?? []),
+  },
+  {
+    id: 6,
+    name: 'Priya Sharma',
+    email: 'coordinator.cse@demo.com',
     password: 'demo123',
     role: 'staff',
     title: 'Department Coordinator',
     departmentCode: 'CSE',
-    permissions: [...campusRolePermissions.staff],
+    designationId: campusDefaultDesignations[1]?.id,
+    designationName: campusDefaultDesignations[1]?.name,
+    permissions: normalizeStaffPermissions(campusDefaultDesignations[1]?.permissions ?? []),
   },
   {
-    id: 3,
+    id: 7,
     name: 'Rahul Sharma',
     email: 'student@demo.com',
     password: 'demo123',
@@ -549,8 +605,14 @@ export function createCampusDemoData(): CampusData {
   return {
     users: users.map((user) => ({ ...user, permissions: user.permissions ? [...user.permissions] : undefined })),
     departments: departments.map((department) => ({ ...department })),
+    designations: campusDefaultDesignations.map((designation) => ({
+      ...designation,
+      permissions: [...designation.permissions],
+    })),
+    masters: campusDefaultMasters.map((master) => ({ ...master })),
     students: students.map((student) => ({
       ...student,
+      gender: student.id % 2 === 0 ? 'female' : 'male',
       appliedCompanyIds: [...student.appliedCompanyIds],
       skills: [...student.skills],
     })),
