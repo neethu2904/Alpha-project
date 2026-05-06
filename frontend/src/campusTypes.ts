@@ -44,10 +44,24 @@ export const campusRolePermissions: Record<CampusRole, CampusPermission[]> = {
     'dashboard.view',
     'marks.view',
     'marks.create',
+    'students.view',
+    'students.create',
+    'placement.view',
+    'placement.create',
+    'announcements.view',
+    'announcements.create',
+    'reports.view',
     'profile.view',
   ],
   student: ['dashboard.view', 'marks.view', 'placement.view', 'placement.apply', 'announcements.view', 'profile.view'],
 };
+
+export type StudentStatus = 'Active' | 'Placement Ready' | 'Placed';
+export type AnnouncementAudience = 'All' | 'Students' | 'Staff' | 'Admin';
+export type AnnouncementPriority = 'High' | 'Medium' | 'Low';
+export type CompanyStatus = 'Open' | 'Closing Soon' | 'Upcoming' | 'Closed';
+export type CompanyType = 'Placement' | 'Internship';
+export type FeeStatus = 'Paid' | 'Pending';
 
 export const campusPermissionLabels: Record<CampusPermission, string> = {
   'dashboard.view': 'Dashboard',
@@ -67,7 +81,7 @@ export const campusPermissionLabels: Record<CampusPermission, string> = {
   'reports.view': 'Reports',
   'profile.view': 'Profile',
   'demo.reset': 'Reset demo',
-};
+};    
 
 export const campusStaffAssignablePermissions: CampusPermission[] = [
   'students.view',
