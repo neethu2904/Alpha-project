@@ -7,7 +7,7 @@ import {
 } from './campusTypes';
 
 export const campusBrand = {
-  productName: 'Chromolog CampusOS',
+  productName: 'Alpha Grew',
   companyName: 'Alpha Grew',
   campusName: 'Brightnode Institute of Technology',
   campusTagline: 'Sales-ready campus management demo for admissions, academics, and placements.',

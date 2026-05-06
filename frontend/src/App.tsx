@@ -18,7 +18,6 @@ import {
   fetchCampusBootstrap,
   isCampusApiConfigured,
   loginWithCampusApi,
-  registerWithCampusApi,
   logoutFromCampusApi,
   resetCampusDemo,
   updateCampusProfile,
@@ -265,75 +264,6 @@ export default function App() {
     }
 
     setAuth({ user: toSessionUser(account) });
-    setError('');
-  };
-
-  const handleRegister = async ({ name, email, password }: { name: string; email: string; password: string }) => {
-    if (apiConfigured) {
-      try {
-        const response = await registerWithCampusApi(name, email, password);
-        setData(applyBrandAccents(response.data));
-        setAuth({ token: response.token, user: response.user });
-        setError('');
-      } catch (apiError) {
-        setError(apiError instanceof Error ? apiError.message : 'Laravel API registration failed.');
-        throw apiError;
-      }
-      return;
-    }
-
-    const existingAccount = data.users.find((candidate) => candidate.email.toLowerCase() === email.toLowerCase());
-
-    if (existingAccount) {
-      const duplicateError = new Error('An account with this email already exists.');
-      setError(duplicateError.message);
-      throw duplicateError;
-    }
-
-    const nextUserId = Math.max(0, ...data.users.map((user) => user.id)) + 1;
-    const nextStudentId = Math.max(0, ...data.students.map((student) => student.id)) + 1;
-    const departmentCode = data.departments[0]?.code ?? 'CSE';
-    const mentor = data.departments.find((department) => department.code === departmentCode)?.hod ?? 'Campus Advisor';
-
-    const newUser = {
-      id: nextUserId,
-      name,
-      email,
-      password,
-      role: 'student' as const,
-      title: 'Student Applicant',
-      departmentCode,
-      studentId: nextStudentId,
-      permissions: [...campusRolePermissions.student],
-    };
-
-    const newStudent = {
-      id: nextStudentId,
-      name,
-      email,
-      registrationNumber: `BIT26${departmentCode}${String(nextStudentId).padStart(3, '0')}`,
-      departmentCode,
-      year: 'year_1',
-      gender: 'prefer_not_to_say',
-      status: 'active',
-      cgpa: 0,
-      attendance: 0,
-      phone: '',
-      mentor,
-      feeStatus: 'pending',
-      appliedCompanyIds: [] as number[],
-      skills: [] as string[],
-      resume: createDefaultCampusStudentResume({ departmentCode, skills: [], phone: '', name, email }),
-    };
-
-    setData((current) =>
-      applyBrandAccents({
-        ...current,
-        users: [...current.users, newUser],
-        students: [newStudent, ...current.students],
-      }),
-    );
-    setAuth({ user: toSessionUser(newUser) });
     setError('');
   };
 
@@ -1632,7 +1562,7 @@ export default function App() {
   };
 
   if (!auth?.user) {
-    return <CampusLogin error={error} onLogin={handleLogin} onRegister={handleRegister} />;
+    return <CampusLogin error={error} onLogin={handleLogin} />;
   }
 
   return (

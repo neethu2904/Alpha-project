@@ -6,12 +6,9 @@ import { campusBrand } from '../../campusDemoData';
 interface CampusLoginProps {
   error: string;
   onLogin: (credentials: { email: string; password: string }) => Promise<void> | void;
-  onRegister: (payload: { name: string; email: string; password: string }) => Promise<void> | void;
 }
 
-export default function CampusLogin({ error, onLogin, onRegister }: CampusLoginProps) {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [name, setName] = useState('');
+export default function CampusLogin({ error, onLogin }: CampusLoginProps) {
   const [email, setEmail] = useState('admin@demo.com');
   const [password, setPassword] = useState('demo123');
   const [submitting, setSubmitting] = useState(false);
@@ -20,11 +17,7 @@ export default function CampusLogin({ error, onLogin, onRegister }: CampusLoginP
     event.preventDefault();
     setSubmitting(true);
     try {
-      if (isRegistering) {
-        await onRegister({ name, email, password });
-      } else {
-        await onLogin({ email, password });
-      }
+      await onLogin({ email, password });
     } finally {
       setSubmitting(false);
     }
@@ -56,67 +49,19 @@ export default function CampusLogin({ error, onLogin, onRegister }: CampusLoginP
                   {campusBrand.companyName}
                 </p>
                 <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-[#0a2342]">
-                  {campusBrand.productName}
+                  {campusBrand.campusName}
                 </h1>
                 <p className="mt-1 text-sm text-[#6c88a4]">
-                  {isRegistering ? 'Create a student account' : 'Sign in to continue'}
+                  Sign in to continue
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 rounded-[22px] bg-[#edf4fb] p-2">
-              <button
-                type="button"
-                onClick={() => setIsRegistering(false)}
-                className={`rounded-[18px] px-4 py-3 text-base font-semibold transition ${
-                  !isRegistering
-                    ? 'bg-white text-[#1a4f87] shadow-[0_10px_24px_-18px_rgba(8,41,75,0.35)]'
-                    : 'text-[#6e8aaa]'
-                }`}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRegistering(true);
-                  setName('');
-                  setEmail('');
-                  setPassword('');
-                }}
-                className={`rounded-[18px] px-4 py-3 text-base font-semibold transition ${
-                  isRegistering
-                    ? 'bg-white text-[#1a4f87] shadow-[0_10px_24px_-18px_rgba(8,41,75,0.35)]'
-                    : 'text-[#6e8aaa]'
-                }`}
-              >
-                Register
-              </button>
+            <div className="mt-5 rounded-[18px] border border-[#d8e7f4] bg-[linear-gradient(135deg,#f8fbff,#eef7ff)] px-4 py-3 text-center text-sm font-medium text-[#245b93]">
+              Demo access: <span className="font-bold">admin@demo.com</span> / <span className="font-bold">demo123</span>
             </div>
 
-            {!isRegistering ? (
-              <div className="mt-5 rounded-[18px] border border-[#d8e7f4] bg-[linear-gradient(135deg,#f8fbff,#eef7ff)] px-4 py-3 text-center text-sm font-medium text-[#245b93]">
-                Demo access: <span className="font-bold">admin@demo.com</span> / <span className="font-bold">demo123</span>
-              </div>
-            ) : null}
-
             <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-              {isRegistering ? (
-                <div className="space-y-2.5">
-                  <label className="text-sm font-semibold text-[#173a61]">Full Name</label>
-                  <div className="flex items-center gap-3 rounded-[18px] border border-[#d5e4f2] bg-[#f8fbff] px-4 py-3.5 transition focus-within:border-[#67bee9] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#dff2fd]">
-                    <input
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      className="w-full border-none bg-transparent text-base text-[#0a2342] outline-none placeholder:text-[#7b94ae]"
-                      placeholder="Enter your full name"
-                      type="text"
-                      required={isRegistering}
-                    />
-                  </div>
-                </div>
-              ) : null}
-
               <div className="space-y-2.5">
                 <label className="text-sm font-semibold text-[#173a61]">Email Address</label>
                 <div className="flex items-center gap-3 rounded-[18px] border border-[#d5e4f2] bg-[#f8fbff] px-4 py-3.5 transition focus-within:border-[#67bee9] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#dff2fd]">
@@ -156,21 +101,10 @@ export default function CampusLogin({ error, onLogin, onRegister }: CampusLoginP
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-[18px] bg-[linear-gradient(135deg,#082c56,#1ba8e9)] px-4 py-3.5 text-base font-semibold text-white shadow-[0_24px_45px_-28px_rgba(8,44,86,0.55)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting ? (isRegistering ? 'Creating account...' : 'Signing in...') : isRegistering ? 'Create Account' : 'Sign In'}
+                {submitting ? 'Signing in...' : 'Sign In'}
                 {!submitting ? <ArrowRight size={18} /> : null}
               </button>
             </form>
-
-            <p className="mt-5 text-center text-sm text-[#58789a]">
-              {isRegistering ? 'Already have an account?' : 'Need a new account?'}{' '}
-              <button
-                type="button"
-                onClick={() => setIsRegistering((current) => !current)}
-                className="font-semibold text-[#0b4d88] hover:underline"
-              >
-                {isRegistering ? 'Sign in' : 'Register now'}
-              </button>
-            </p>
           </div>
         </motion.section>
       </div>
