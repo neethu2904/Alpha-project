@@ -144,7 +144,7 @@ export const DesignationsModule: React.FC = () => {
     if (!formData.name || !formData.slug) {
       setError('Please fill in all required fields (Name, Slug)');
       return;
-          const response = await apiCall('/permissions-v1/list/grouped', 'GET');
+    }
 
     try {
       const payload = {
@@ -152,7 +152,7 @@ export const DesignationsModule: React.FC = () => {
         department_id: formData.department_id ? Number(formData.department_id) : null,
         permissions: formData.permissions,
       };
-            await apiCall('/permissions-v1/seed/defaults', 'POST');
+
       if (editingId) {
           await apiCall(`/designations/${editingId}`, 'PUT', payload);
       } else {
