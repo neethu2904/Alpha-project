@@ -56,13 +56,6 @@ export const campusRolePermissions: Record<CampusRole, CampusPermission[]> = {
   student: ['dashboard.view', 'marks.view', 'placement.view', 'placement.apply', 'announcements.view', 'profile.view'],
 };
 
-export type StudentStatus = 'Active' | 'Placement Ready' | 'Placed';
-export type AnnouncementAudience = 'All' | 'Students' | 'Staff' | 'Admin';
-export type AnnouncementPriority = 'High' | 'Medium' | 'Low';
-export type CompanyStatus = 'Open' | 'Closing Soon' | 'Upcoming' | 'Closed';
-export type CompanyType = 'Placement' | 'Internship';
-export type FeeStatus = 'Paid' | 'Pending';
-
 export const campusPermissionLabels: Record<CampusPermission, string> = {
   'dashboard.view': 'Dashboard',
   'students.view': 'Students',

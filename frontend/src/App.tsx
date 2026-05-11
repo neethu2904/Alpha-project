@@ -527,7 +527,6 @@ export default function App() {
     name: string;
     code: string;
     description: string;
-    description: string;
     hod: string;
     staffCount: number;
     intake: number;
